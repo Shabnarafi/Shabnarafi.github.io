@@ -1,0 +1,173 @@
+<template>
+<v-flex xs12 row>
+  <!-- Stability Graphs -->
+  <v-layout row wrap>
+    <v-flex d-block md12>
+    <template-charts :title=this.stability.healthTrend.title :Graph=stability :subTitle=this.stability.healthTrend.subTitle>
+    <template slot="main-graph"><canvas :id=this.stability.healthTrend.id1></canvas>
+    </template>
+    <template slot="sub-graph"><canvas :id=this.stability.healthTrend.id2></canvas>
+    </template>
+    </template-charts>
+    </v-flex>
+  </v-layout>
+  <v-layout row wrap>
+    <v-flex d-block md12>
+    <template-charts :title=this.stability.FeatureTrend.title :Graph=stability :subTitle=this.stability.FeatureTrend.subTitle>
+    <template slot="main-graph"><canvas :id=this.stability.FeatureTrend.id1></canvas>
+    </template>
+    <template slot="sub-graph"><canvas :id=this.stability.FeatureTrend.id2></canvas>
+    </template>
+    </template-charts>
+    </v-flex>
+  </v-layout>
+
+  <!-- Functional Graphs-->
+
+  <v-layout row wrap>
+    <v-flex d-block md12>
+      <template-charts :title=this.functionality.healthTrend.title :Graph=functionality :subTitle=this.functionality.healthTrend.subTitle>
+        <template slot="main-graph"><canvas :id=this.functionality.healthTrend.id1></canvas>
+        </template>
+        <template slot="sub-graph"><canvas :id=this.functionality.healthTrend.id2></canvas>
+        </template>
+      </template-charts>
+    </v-flex>
+  </v-layout>
+  <v-layout row wrap>
+    <v-flex d-block md12>
+      <template-charts :title=this.functionality.healthTrend.title :Graph=functionality :subTitle=this.functionality.healthTrend.subTitle>
+        <template slot="main-graph"><canvas :id=this.functionality.healthTrend.id1></canvas>
+        </template>
+        <template slot="sub-graph"><canvas :id=this.functionality.healthTrend.id2></canvas>
+        </template>
+      </template-charts>
+    </v-flex>
+  </v-layout>
+
+  <v-layout row wrap>
+    <v-flex d-block md12>
+    <perf-chart></perf-chart>
+    </v-flex>
+  </v-layout>
+
+<v-layout row wrap>
+    <v-flex d-block md12>
+    <mem-chart></mem-chart>
+    </v-flex>
+  </v-layout>
+
+</v-flex>
+</template>
+
+<script>
+import TemplateCharts from './TemplateCharts'
+import Performance from './Performance'
+import Memory from './Memory'
+import Chart from 'chart.js';
+import ChartData from './chartData/chart-data';
+import service from './chartData/service';
+
+export default {
+  name: 'Dashboard',
+  components: {
+      'template-charts': TemplateCharts,
+      'perf-chart': Performance,
+      'mem-chart': Memory
+  },
+  methods: {
+    createSubChartForHealthTrnd: function (graphData, subChartId, build) {
+      var subData = ChartData.buildFeatureChart(graphData, build);
+      const ctx = document.getElementById(subChartId);
+      const myChart = new Chart(ctx, {
+        type: subData.type,
+        data: subData.data,
+        options: subData.options
+      });
+      this.SubChartForHealthTrnd = build;
+      console.log(build);
+    },
+
+    createChart(chartId, data) {
+      const ctx = document.getElementById(chartId);
+      const myChart = new Chart(ctx, {
+          type: data.type,
+          data: data.data,
+          options: data.options,
+      });
+    },
+
+    createSubChartForFeatureTrnd(graphData, subChartId, build, script){
+      var subData = ChartData.FailureReasonsChart(graphData, build, script);
+      const ctx = document.getElementById(subChartId);
+      this.h2 = new Chart(ctx, {
+         type: subData.type,
+          data: subData.data,
+          options: subData.options
+      });
+    },
+
+    getGraphData: function () {
+      var obj = this;
+      service.getDataStability().then(function (data) {
+        obj.createCharts(data)
+      })
+        .catch(error => console.error(error));
+    },
+    createCharts: function (graphData) {
+      console.log('Received data');
+      this.stability.healthTrend.data1 = ChartData.buildHealthTrend(graphData);
+      this.stability.FeatureTrend.data1 = ChartData.buildVsFeatureChart(graphData);
+      this.createChart(this.stability.healthTrend.id1, this.stability.healthTrend.data1);
+      this.createChart(this.stability.FeatureTrend.id1, this.stability.FeatureTrend.data1);
+      this.createSubChartForHealthTrnd(graphData, this.stability.healthTrend.id2, this.stability.healthTrend.build);
+      this.createSubChartForFeatureTrnd(graphData, this.stability.FeatureTrend.id2, this.stability.FeatureTrend.build, this.stability.FeatureTrend.script);
+    }
+  },
+  mounted() {
+    this.getGraphData();
+  },
+  data() {
+    return {
+      stability: {
+        healthTrend: {
+          id1: "build-health-trend-chart",
+          title: "Health Trend",
+          id2: "build-health-sub-chart",
+          build: "build1",
+          subTitle: "Feature-vs-Build"
+        },
+        FeatureTrend: {
+          id1: "build-vs-feature",
+          title: 'Feature Trend',
+          id2: "fail-reason-chart",
+          build: "build1",
+          script: "script1",
+          subTitle: "Failures"
+        }
+      },
+
+      functionality: {
+        healthTrend: {
+          id1: "build-health-trend-chart-func",
+          title: "Health Trend",
+          id2: "build-health-sub-chart-func",
+          build: "build1",
+          subTitle: "Feature-vs-Build"
+        },
+        FeatureTrend: {
+          id1: "build-vs-feature-func",
+          title: 'Feature Trend',
+          id2: "fail-reason-chart-func",
+          build: "build1",
+          script: "script1",
+          subTitle: "Failures"
+        }
+      },
+      h2: null
+    }
+  },
+  created: function(){
+  }
+}
+</script>
